@@ -1,0 +1,30 @@
+export const config = {
+  PORT: 8000,
+  RATE_LIMIT: {
+    global: { windowMs: 60 * 1000, max: 100 },
+    strict: { windowMs: 60 * 1000, max: 10 },
+  },
+  FILTERABLE_FIELDS: ['region', 'sex', 'maritalstatus', 'district'] as const,
+  SORTABLE_FIELDS: ['surname', 'firstname', 'dateofbirth', 'nin'] as const,
+  COLUMN_MAP: {
+    region: 'residentregion',
+    sex: 'sex',
+    maritalstatus: 'maritalstatus',
+    district: 'residentdistrict',
+    surname: 'surname',
+    firstname: 'firstname',
+    dateofbirth: 'dateofbirth',
+    nin: 'nin',
+  } as Record<string, string>,
+  ALL_FIELDS: [
+    'nin', 'firstname', 'middlename', 'surname', 'othernames',
+    'sex', 'dateofbirth',
+    'residentregion', 'residentdistrict', 'residentward', 'residentvillage', 'residentstreet', 'residentpostcode',
+    'permanentregion', 'permanentdistrict', 'permanentward', 'permanentvillage', 'permanentstreet',
+    'birthcountry', 'birthregion', 'birthdistrict', 'birthward',
+    'nationality', 'phonenumber', 'maritalstatus', 'occupation',
+    'primaryschooleducation', 'primaryschooldistrict', 'primaryschoolyear',
+    'photo', 'signature', 'nationalidnumber', 'lastname',
+  ],
+  MAX_LIMIT: 100,
+} as const;

@@ -1,0 +1,93 @@
+Nida Mock API — data types and endpoints
+
+=== Citizen Object ===
+  NIN                    str (20 digits)   "19800101123456789012"
+  FIRSTNAME              str               "Juma"
+  MIDDLENAME             str               "Hassan"
+  SURNAME                str               "Mwamba"
+  OTHERNAMES             str               ""
+  SEX                    str               "MALE" | "FEMALE"
+  DATEOFBIRTH            str               "1980-01-01"
+  RESIDENTREGION         str               "Dar es Salaam"
+  RESIDENTDISTRICT       str               "Ilala"
+  RESIDENTWARD           str               "Kariakoo"
+  RESIDENTVILLAGE        str               "Kariakoo"
+  RESIDENTSTREET         str               "Mkwepu"
+  RESIDENTPOSTCODE       str               "11101"
+  PERMANENTREGION        str               "Morogoro"
+  PERMANENTDISTRICT      str               "Morogoro Urban"
+  PERMANENTWARD          str               "Kilakala"
+  PERMANENTVILLAGE       str               "Kilakala A"
+  PERMANENTSTREET        str               "Boma"
+  BIRTHCOUNTRY           str               "TANZANIA"
+  BIRTHREGION            str               "Dar es Salaam"
+  BIRTHDISTRICT          str               "Ilala"
+  BIRTHWARD              str               "Mchikichini"
+  NATIONALITY            str               "TANZANIAN"
+  PHONENUMBER            str               "0712345678"
+  MARITALSTATUS          str               "Married"
+  OCCUPATION             str               "Teacher"
+  PRIMARYSCHOOLEDUCATION str               "Msalato Primary"
+  PRIMARYSCHOOLDISTRICT  str               "Dodoma Urban"
+  PRIMARYSCHOOLYEAR      str               "1994"
+  PHOTO                  str (base64 PNG)  <PNG bytes>
+  SIGNATURE              str (base64 PNG)  <PNG bytes>
+  NATIONALIDNUMBER       str (20 digits)   "19800101123456789012"
+  LASTNAME               str               "Mwamba"
+
+=== NIN Format ===
+  YYYYMMDD + 12-digit serial
+  Example: 19800101123456789012
+    → Born 1980-01-01, serial 123456789012
+
+=== GET /v1/citizens ===
+  Query params: region, district, ward, sex, sort (+field / -field),
+                limit (max 100, default 20), start (offset, default 0),
+                fields (comma-separated, e.g. nin,firstname,surname)
+  Response 200:
+    { "data": [ Citizen... ],
+      "pagination": { "total": 100, "limit": 10, "start": 0, "next": 10 } }
+
+=== GET /v1/citizens/:nin ===
+  Response 200 (found):
+    { "obj": { "result": Citizen } }
+  Response 200 (not found):
+    { "obj": { "error": "National ID not found in registry" } }
+
+=== POST /v1/citizens ===
+  Body: JSON with at minimum FIRSTNAME, SURNAME, SEX
+  If NIN omitted, auto-generated from current date + random serial
+  Response 201:
+    { "obj": { "result": Citizen } }
+  Response 422 (validation error):
+    { "obj": { "error": "Validation failed", "code": "VALIDATION_ERROR",
+      "details": [ { "field": "FIRSTNAME", "message": "Required" } ] } }
+
+=== PUT /v1/citizens/:nin ===
+  Full replacement upsert. Requires at minimum FIRSTNAME, SURNAME, SEX.
+  Response 201 (new record) or 200 (updated existing):
+    { "obj": { "result": Citizen } }
+
+=== DELETE /v1/citizens/:nin ===
+  Response 204 No Content (no body). Idempotent — same result on repeat.
+
+=== Error Responses ===
+  400 Bad Request:
+    { "error": "<message>", "code": "BAD_REQUEST" }
+  422 Validation Error:
+    { "error": "Validation failed", "code": "VALIDATION_ERROR",
+      "details": [ { "field": "<name>", "message": "<reason>" } ] }
+  429 Rate Limited:
+    { "error": "Too many requests...", "code": "RATE_LIMITED" }
+  500 Internal Server Error:
+    { "error": "Internal server error", "code": "INTERNAL_ERROR" }
+
+=== CORS ===
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  OPTIONS → 204 No Content
+
+=== Rate Limits ===
+  Global: 100 requests per minute per IP
+  POST:   10 requests per minute per IP
+  On limit: 429 + Retry-After header
