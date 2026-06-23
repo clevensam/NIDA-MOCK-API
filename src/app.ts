@@ -19,8 +19,9 @@ app.use((_req, res, next) => {
 });
 
 app.use(express.json());
-app.use('/', swaggerUi.serve);
-app.get('/', swaggerUi.setup(openapi));
+app.use('/apidocs', swaggerUi.serve);
+app.get('/apidocs', swaggerUi.setup(openapi));
+app.get('/', (_req, res) => res.redirect('/apidocs'));
 app.get('/openapi.json', (_req, res) => res.json(openapi));
 app.use(globalLimiter);
 
