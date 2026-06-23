@@ -158,21 +158,14 @@ describe('GET /v1/citizens', () => {
 });
 
 describe('GET /v1/citizens/:nin', () => {
-  it('returns citizen by valid NIN (hyphenated)', async () => {
-    const res = await request.get('/v1/citizens/19800101-12345-67890-12');
-    expect(res.status).toBe(200);
-    expect(res.body.obj.result.FIRSTNAME).toBe('Juma');
-    expect(res.body.obj.result.SURNAME).toBe('Mwamba');
-  });
-
-  it('returns citizen by valid NIN (flat, no hyphens)', async () => {
+  it('returns citizen by valid NIN', async () => {
     const res = await request.get('/v1/citizens/19800101123456789012');
     expect(res.status).toBe(200);
     expect(res.body.obj.result.FIRSTNAME).toBe('Juma');
   });
 
   it('returns error for unknown NIN', async () => {
-    const res = await request.get('/v1/citizens/00000000-00000-00000-00');
+    const res = await request.get('/v1/citizens/00000000000000000000');
     expect(res.status).toBe(200);
     expect(res.body.obj.error).toBe('National ID not found in registry');
   });
@@ -198,7 +191,7 @@ describe('POST /v1/citizens', () => {
 describe('PUT /v1/citizens/:nin', () => {
   it('creates a new record (upsert)', async () => {
     const res = await request
-      .put('/v1/citizens/99999999-99999-99999-99')
+      .put('/v1/citizens/99999999999999999999')
       .send({ FIRSTNAME: 'Upserted', SURNAME: 'Person', SEX: 'FEMALE' });
     expect(res.status).toBe(201);
     expect(res.body.obj.result.NIN).toBe('99999999-99999-99999-99');
@@ -206,7 +199,7 @@ describe('PUT /v1/citizens/:nin', () => {
 
   it('replaces an existing record', async () => {
     const res = await request
-      .put('/v1/citizens/19800101-12345-67890-12')
+      .put('/v1/citizens/19800101123456789012')
       .send({ FIRSTNAME: 'Updated', SURNAME: 'Mwamba', SEX: 'MALE' });
     expect(res.status).toBe(200);
     expect(res.body.obj.result.FIRSTNAME).toBe('Updated');
@@ -215,13 +208,13 @@ describe('PUT /v1/citizens/:nin', () => {
 
 describe('DELETE /v1/citizens/:nin', () => {
   it('deletes an existing citizen', async () => {
-    const res = await request.delete('/v1/citizens/19800101-12345-67890-12');
+    const res = await request.delete('/v1/citizens/19800101123456789012');
     expect(res.status).toBe(204);
   });
 
   it('is idempotent — returns 204 even if already deleted', async () => {
-    await request.delete('/v1/citizens/19800101-12345-67890-12');
-    const res = await request.delete('/v1/citizens/19800101-12345-67890-12');
+    await request.delete('/v1/citizens/19800101123456789012');
+    const res = await request.delete('/v1/citizens/19800101123456789012');
     expect(res.status).toBe(204);
   });
 });

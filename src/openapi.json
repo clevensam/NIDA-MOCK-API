@@ -7,6 +7,10 @@
   },
   "servers": [
     {
+      "url": "https://nida-mock-api.onrender.com",
+      "description": "Production"
+    },
+    {
       "url": "http://localhost:8000",
       "description": "Local development"
     }
