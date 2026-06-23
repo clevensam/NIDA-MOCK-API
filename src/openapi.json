@@ -1,0 +1,390 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NIDA Mock API",
+    "version": "1.0.0",
+    "description": "Unofficial mock API for Tanzania NIDA (National Identification Authority) citizen lookup.\n\nProvides CRUD operations for citizen records with filtering, sorting, pagination, and field selection.\n\n**Rate limits:**\n- Global: 100 requests/min per IP\n- POST: 10 requests/min per IP\n\n**NIN format:** `YYYYMMDD-XXXXX-XXXXX-XX` (20 alphanumeric chars)"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "Service", "description": "Service info" },
+    { "name": "Citizens", "description": "Citizen CRUD operations" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Service"],
+        "summary": "Service info",
+        "operationId": "getServiceInfo",
+        "responses": {
+          "200": {
+            "description": "Service information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": { "type": "string", "example": "Nida Mock API" },
+                    "version": { "type": "string", "example": "v1" },
+                    "endpoint": { "type": "string", "example": "GET/POST /v1/citizens" },
+                    "status": { "type": "string", "example": "running" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citizens": {
+      "get": {
+        "tags": ["Citizens"],
+        "summary": "List citizens",
+        "description": "Returns a paginated list of citizens with optional filtering, sorting, and field selection.",
+        "operationId": "listCitizens",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "description": "Filter by resident region (case-insensitive)",
+            "schema": { "type": "string" },
+            "example": "Dar es Salaam"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "description": "Filter by resident district (case-insensitive)",
+            "schema": { "type": "string" },
+            "example": "Ilala"
+          },
+          {
+            "name": "sex",
+            "in": "query",
+            "description": "Filter by sex",
+            "schema": { "type": "string", "enum": ["MALE", "FEMALE"] }
+          },
+          {
+            "name": "maritalstatus",
+            "in": "query",
+            "description": "Filter by marital status (case-insensitive)",
+            "schema": { "type": "string" },
+            "example": "Married"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort by field. Prefix with `+` for ascending, `-` for descending. Multiple fields comma-separated.\n\nSortable fields: `surname`, `firstname`, `dateofbirth`, `nin`",
+            "schema": { "type": "string" },
+            "example": "-surname"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Results per page (max 100, default 20)",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "description": "Offset for pagination (default 0)",
+            "schema": { "type": "integer", "minimum": 0, "default": 0 }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Comma-separated list of fields to include. Omit to return all fields.",
+            "schema": { "type": "string" },
+            "example": "nin,firstname,surname"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of citizens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Citizens"],
+        "summary": "Create a citizen",
+        "description": "Create a new citizen record. If NIN is omitted, it is auto-generated from the current date.\n\nRate limited to 10 requests/min per IP.",
+        "operationId": "createCitizen",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CitizenCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Citizen created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NidaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ValidationError" }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citizens/{nin}": {
+      "get": {
+        "tags": ["Citizens"],
+        "summary": "Get citizen by NIN",
+        "operationId": "getCitizen",
+        "parameters": [
+          {
+            "name": "nin",
+            "in": "path",
+            "required": true,
+            "description": "20-digit NIN (with or without hyphens)",
+            "schema": { "type": "string" },
+            "example": "19800101-12345-67890-12"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Citizen found — returns `obj.result`. If not found, returns `obj.error` with message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NidaResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Citizens"],
+        "summary": "Upsert citizen",
+        "description": "Full replacement. Creates the record if it does not exist, otherwise replaces the existing one.",
+        "operationId": "upsertCitizen",
+        "parameters": [
+          {
+            "name": "nin",
+            "in": "path",
+            "required": true,
+            "description": "20-digit NIN (with or without hyphens)",
+            "schema": { "type": "string" },
+            "example": "19800101-12345-67890-12"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CitizenCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing record updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NidaResponse" }
+              }
+            }
+          },
+          "201": {
+            "description": "New record created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NidaResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Citizens"],
+        "summary": "Delete citizen",
+        "description": "Deletes a citizen by NIN. Idempotent — returns 204 even if already deleted.",
+        "operationId": "deleteCitizen",
+        "parameters": [
+          {
+            "name": "nin",
+            "in": "path",
+            "required": true,
+            "description": "20-digit NIN (with or without hyphens)",
+            "schema": { "type": "string" },
+            "example": "19800101-12345-67890-12"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted successfully (no content)"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Citizen": {
+        "type": "object",
+        "required": ["NIN", "FIRSTNAME", "SURNAME", "SEX"],
+        "properties": {
+          "NIN": { "type": "string", "description": "20-digit NID", "example": "19800101-12345-67890-12" },
+          "FIRSTNAME": { "type": "string", "example": "Juma" },
+          "MIDDLENAME": { "type": "string", "example": "Hassan" },
+          "SURNAME": { "type": "string", "example": "Mwamba" },
+          "OTHERNAMES": { "type": "string", "example": "" },
+          "LASTNAME": { "type": "string", "example": "Mwamba" },
+          "NATIONALIDNUMBER": { "type": "string", "example": "19800101-12345-67890-12" },
+          "SEX": { "type": "string", "enum": ["MALE", "FEMALE"] },
+          "DATEOFBIRTH": { "type": "string", "format": "date", "example": "1980-01-01" },
+          "NATIONALITY": { "type": "string", "example": "TANZANIAN" },
+          "PHONENUMBER": { "type": "string", "example": "0712345678" },
+          "MARITALSTATUS": { "type": "string", "example": "Married" },
+          "OCCUPATION": { "type": "string", "example": "Teacher" },
+          "RESIDENTREGION": { "type": "string", "example": "Dar es Salaam" },
+          "RESIDENTDISTRICT": { "type": "string", "example": "Ilala" },
+          "RESIDENTWARD": { "type": "string", "example": "Kariakoo" },
+          "RESIDENTVILLAGE": { "type": "string", "example": "Kariakoo" },
+          "RESIDENTSTREET": { "type": "string", "example": "Mkwepu" },
+          "RESIDENTPOSTCODE": { "type": "string", "example": "11101" },
+          "PERMANENTREGION": { "type": "string", "example": "Morogoro" },
+          "PERMANENTDISTRICT": { "type": "string", "example": "Morogoro Urban" },
+          "PERMANENTWARD": { "type": "string", "example": "Kilakala" },
+          "PERMANENTVILLAGE": { "type": "string", "example": "Kilakala A" },
+          "PERMANENTSTREET": { "type": "string", "example": "Boma" },
+          "BIRTHCOUNTRY": { "type": "string", "example": "TANZANIA" },
+          "BIRTHREGION": { "type": "string", "example": "Dar es Salaam" },
+          "BIRTHDISTRICT": { "type": "string", "example": "Ilala" },
+          "BIRTHWARD": { "type": "string", "example": "Mchikichini" },
+          "PRIMARYSCHOOLEDUCATION": { "type": "string", "example": "Msalato Primary" },
+          "PRIMARYSCHOOLDISTRICT": { "type": "string", "example": "Dodoma Urban" },
+          "PRIMARYSCHOOLYEAR": { "type": "string", "example": "1994" },
+          "PHOTO": { "type": "string", "format": "byte", "description": "Base64-encoded placeholder photo PNG" },
+          "SIGNATURE": { "type": "string", "format": "byte", "description": "Base64-encoded placeholder signature PNG" }
+        }
+      },
+      "CitizenCreate": {
+        "type": "object",
+        "required": ["FIRSTNAME", "SURNAME", "SEX"],
+        "properties": {
+          "NIN": { "type": "string", "description": "Optional. Auto-generated from current date if omitted.", "example": "19800101-12345-67890-12" },
+          "FIRSTNAME": { "type": "string", "example": "Juma" },
+          "MIDDLENAME": { "type": "string", "example": "Hassan" },
+          "SURNAME": { "type": "string", "example": "Mwamba" },
+          "OTHERNAMES": { "type": "string", "example": "" },
+          "SEX": { "type": "string", "enum": ["MALE", "FEMALE"] },
+          "DATEOFBIRTH": { "type": "string", "format": "date", "example": "1980-01-01" },
+          "PHONENUMBER": { "type": "string", "example": "0712345678" },
+          "MARITALSTATUS": { "type": "string", "example": "Single" },
+          "OCCUPATION": { "type": "string", "example": "Engineer" },
+          "nationality": { "type": "string", "example": "TANZANIAN" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Citizen" }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer", "description": "Total matching records" },
+              "limit": { "type": "integer", "description": "Results per page" },
+              "start": { "type": "integer", "description": "Current offset" },
+              "next": { "type": "integer", "nullable": true, "description": "Offset for next page, or null if no more" }
+            }
+          }
+        }
+      },
+      "NidaResponse": {
+        "type": "object",
+        "properties": {
+          "obj": {
+            "type": "object",
+            "properties": {
+              "result": { "$ref": "#/components/schemas/Citizen" },
+              "error": { "type": "string", "description": "Error message when citizen not found" }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "obj": {
+            "type": "object",
+            "properties": {
+              "error": { "type": "string" },
+              "code": { "type": "string" }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "obj": {
+            "type": "object",
+            "properties": {
+              "error": { "type": "string" },
+              "code": { "type": "string" },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
