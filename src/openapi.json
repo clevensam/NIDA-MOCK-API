@@ -184,7 +184,7 @@
             "required": true,
             "description": "20-digit NIN (with or without hyphens)",
             "schema": { "type": "string" },
-            "example": "19800101-12345-67890-12"
+            "example": "19940917-10000-00010-01"
           }
         ],
         "responses": {
@@ -212,7 +212,7 @@
             "required": true,
             "description": "20-digit NIN (with or without hyphens)",
             "schema": { "type": "string" },
-            "example": "19800101-12345-67890-12"
+            "example": "19940917-10000-00010-01"
           }
         ],
         "requestBody": {
@@ -256,7 +256,7 @@
             "required": true,
             "description": "20-digit NIN (with or without hyphens)",
             "schema": { "type": "string" },
-            "example": "19800101-12345-67890-12"
+            "example": "19940917-10000-00010-01"
           }
         ],
         "responses": {
@@ -273,13 +273,13 @@
         "type": "object",
         "required": ["NIN", "FIRSTNAME", "SURNAME", "SEX"],
         "properties": {
-          "NIN": { "type": "string", "description": "20-digit NID", "example": "19800101-12345-67890-12" },
+          "NIN": { "type": "string", "description": "20-digit NID", "example": "19940917-10000-00010-01" },
           "FIRSTNAME": { "type": "string", "example": "Juma" },
           "MIDDLENAME": { "type": "string", "example": "Hassan" },
           "SURNAME": { "type": "string", "example": "Mwamba" },
           "OTHERNAMES": { "type": "string", "example": "" },
           "LASTNAME": { "type": "string", "example": "Mwamba" },
-          "NATIONALIDNUMBER": { "type": "string", "example": "19800101-12345-67890-12" },
+          "NATIONALIDNUMBER": { "type": "string", "example": "19940917-10000-00010-01" },
           "SEX": { "type": "string", "enum": ["MALE", "FEMALE"] },
           "DATEOFBIRTH": { "type": "string", "format": "date", "example": "1980-01-01" },
           "NATIONALITY": { "type": "string", "example": "TANZANIAN" },
@@ -312,7 +312,7 @@
         "type": "object",
         "required": ["FIRSTNAME", "SURNAME", "SEX"],
         "properties": {
-          "NIN": { "type": "string", "description": "Optional. Auto-generated from current date if omitted.", "example": "19800101-12345-67890-12" },
+          "NIN": { "type": "string", "description": "Optional. Auto-generated from current date if omitted.", "example": "19940917-10000-00010-01" },
           "FIRSTNAME": { "type": "string", "example": "Juma" },
           "MIDDLENAME": { "type": "string", "example": "Hassan" },
           "SURNAME": { "type": "string", "example": "Mwamba" },
