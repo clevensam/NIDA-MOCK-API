@@ -18,7 +18,7 @@ export function buildQuery(params: QueryParams): BuiltQuery {
     if (params[key]) {
       const col = config.COLUMN_MAP[key];
       if (col) {
-        wheres.push(`${col} = ?`);
+        wheres.push(`LOWER(${col}) = LOWER(?)`);
         values.push(String(params[key]));
       }
     }

@@ -7,7 +7,7 @@ let memDb: any;
 
 const TEST_CITIZENS = [
   {
-    nin: '19800101123456789012', firstname: 'Juma', middlename: 'Hassan', surname: 'Mwamba',
+    nin: '19800101-12345-67890-12', firstname: 'Juma', middlename: 'Hassan', surname: 'Mwamba',
     othernames: '', sex: 'MALE', dateofbirth: '1980-01-01',
     residentregion: 'Dar es Salaam', residentdistrict: 'Ilala', residentward: 'Kariakoo',
     residentvillage: 'Kariakoo A', residentstreet: 'Mkwepu', residentpostcode: '11101',
@@ -16,10 +16,10 @@ const TEST_CITIZENS = [
     birthcountry: 'TANZANIA', birthregion: 'Dar es Salaam', birthdistrict: 'Ilala', birthward: 'Mchikichini',
     nationality: 'TANZANIAN', phonenumber: '0712345678', maritalstatus: 'Married', occupation: 'Teacher',
     primaryschooleducation: 'Msalato Primary', primaryschooldistrict: 'Dodoma Urban', primaryschoolyear: '1994',
-    photo: '', signature: '', nationalidnumber: '19800101123456789012', lastname: 'Mwamba',
+    photo: '', signature: '', nationalidnumber: '19800101-12345-67890-12', lastname: 'Mwamba',
   },
   {
-    nin: '19900320567890123456', firstname: 'Baraka', middlename: 'Joseph', surname: 'Kato',
+    nin: '19900320-56789-01234-56', firstname: 'Baraka', middlename: 'Joseph', surname: 'Kato',
     othernames: '', sex: 'MALE', dateofbirth: '1990-03-20',
     residentregion: 'Mwanza', residentdistrict: 'Nyamagana', residentward: 'Mwanza City',
     residentvillage: 'City Center', residentstreet: 'Station Road', residentpostcode: '33101',
@@ -28,10 +28,10 @@ const TEST_CITIZENS = [
     birthcountry: 'TANZANIA', birthregion: 'Mwanza', birthdistrict: 'Nyamagana', birthward: 'Mwanza City',
     nationality: 'TANZANIAN', phonenumber: '0612345678', maritalstatus: 'Single', occupation: 'Engineer',
     primaryschooleducation: 'Mwanza Primary', primaryschooldistrict: 'Nyamagana', primaryschoolyear: '2002',
-    photo: '', signature: '', nationalidnumber: '19900320567890123456', lastname: 'Kato',
+    photo: '', signature: '', nationalidnumber: '19900320-56789-01234-56', lastname: 'Kato',
   },
   {
-    nin: '19850615345678901234', firstname: 'Aisha', middlename: 'Salim', surname: 'Mohamed',
+    nin: '19850615-34567-89012-34', firstname: 'Aisha', middlename: 'Salim', surname: 'Mohamed',
     othernames: '', sex: 'FEMALE', dateofbirth: '1985-06-15',
     residentregion: 'Arusha', residentdistrict: 'Arusha City', residentward: 'Sekei',
     residentvillage: 'Sekei Kati', residentstreet: 'Nyerere Road', residentpostcode: '23101',
@@ -40,7 +40,7 @@ const TEST_CITIZENS = [
     birthcountry: 'TANZANIA', birthregion: 'Arusha', birthdistrict: 'Arusha City', birthward: 'Sekei',
     nationality: 'TANZANIAN', phonenumber: '0765432198', maritalstatus: 'Married', occupation: 'Nurse',
     primaryschooleducation: 'Sekei Primary', primaryschooldistrict: 'Arusha City', primaryschoolyear: '1997',
-    photo: '', signature: '', nationalidnumber: '19850615345678901234', lastname: 'Mohamed',
+    photo: '', signature: '', nationalidnumber: '19850615-34567-89012-34', lastname: 'Mohamed',
   },
 ];
 
@@ -158,15 +158,21 @@ describe('GET /v1/citizens', () => {
 });
 
 describe('GET /v1/citizens/:nin', () => {
-  it('returns citizen by valid NIN', async () => {
-    const res = await request.get('/v1/citizens/19800101123456789012');
+  it('returns citizen by valid NIN (hyphenated)', async () => {
+    const res = await request.get('/v1/citizens/19800101-12345-67890-12');
     expect(res.status).toBe(200);
     expect(res.body.obj.result.FIRSTNAME).toBe('Juma');
     expect(res.body.obj.result.SURNAME).toBe('Mwamba');
   });
 
+  it('returns citizen by valid NIN (flat, no hyphens)', async () => {
+    const res = await request.get('/v1/citizens/19800101123456789012');
+    expect(res.status).toBe(200);
+    expect(res.body.obj.result.FIRSTNAME).toBe('Juma');
+  });
+
   it('returns error for unknown NIN', async () => {
-    const res = await request.get('/v1/citizens/00000000000000000000');
+    const res = await request.get('/v1/citizens/00000000-00000-00000-00');
     expect(res.status).toBe(200);
     expect(res.body.obj.error).toBe('National ID not found in registry');
   });
@@ -179,7 +185,7 @@ describe('POST /v1/citizens', () => {
       .send({ FIRSTNAME: 'Test', SURNAME: 'User', SEX: 'MALE' });
     expect(res.status).toBe(201);
     expect(res.body.obj.result.FIRSTNAME).toBe('Test');
-    expect(res.body.obj.result.NIN).toHaveLength(20);
+    expect(res.body.obj.result.NIN).toMatch(/^\d{8}-\d{5}-\d{5}-\d{2}$/);
   });
 
   it('returns 422 for missing required fields', async () => {
@@ -192,15 +198,15 @@ describe('POST /v1/citizens', () => {
 describe('PUT /v1/citizens/:nin', () => {
   it('creates a new record (upsert)', async () => {
     const res = await request
-      .put('/v1/citizens/99999999999999999999')
+      .put('/v1/citizens/99999999-99999-99999-99')
       .send({ FIRSTNAME: 'Upserted', SURNAME: 'Person', SEX: 'FEMALE' });
     expect(res.status).toBe(201);
-    expect(res.body.obj.result.NIN).toBe('99999999999999999999');
+    expect(res.body.obj.result.NIN).toBe('99999999-99999-99999-99');
   });
 
   it('replaces an existing record', async () => {
     const res = await request
-      .put('/v1/citizens/19800101123456789012')
+      .put('/v1/citizens/19800101-12345-67890-12')
       .send({ FIRSTNAME: 'Updated', SURNAME: 'Mwamba', SEX: 'MALE' });
     expect(res.status).toBe(200);
     expect(res.body.obj.result.FIRSTNAME).toBe('Updated');
@@ -209,13 +215,13 @@ describe('PUT /v1/citizens/:nin', () => {
 
 describe('DELETE /v1/citizens/:nin', () => {
   it('deletes an existing citizen', async () => {
-    const res = await request.delete('/v1/citizens/19800101123456789012');
+    const res = await request.delete('/v1/citizens/19800101-12345-67890-12');
     expect(res.status).toBe(204);
   });
 
   it('is idempotent — returns 204 even if already deleted', async () => {
-    await request.delete('/v1/citizens/19800101123456789012');
-    const res = await request.delete('/v1/citizens/19800101123456789012');
+    await request.delete('/v1/citizens/19800101-12345-67890-12');
+    const res = await request.delete('/v1/citizens/19800101-12345-67890-12');
     expect(res.status).toBe(204);
   });
 });

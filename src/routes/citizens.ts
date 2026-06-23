@@ -4,6 +4,16 @@ import { buildQuery } from '../utils/queryBuilder';
 import { AppError } from '../types';
 import type { Citizen } from '../types';
 
+const NIN_REGEX = /^[A-Z0-9]{8}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{2}$/;
+
+function normalizeNIN(nin: string): string {
+  const cleaned = nin.toUpperCase().replace(/-/g, '');
+  if (/^[A-Z0-9]{20}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 13)}-${cleaned.slice(13, 18)}-${cleaned.slice(18, 20)}`;
+  }
+  return cleaned;
+}
+
 const router = Router();
 
 function queryOne(sql: string, params: unknown[]): Record<string, unknown> | null {
@@ -77,7 +87,7 @@ router.get('/', (req, res, next) => {
 
 router.get('/:nin', (req, res, next) => {
   try {
-    const row = queryOne('SELECT * FROM citizens WHERE nin = ?', [req.params.nin]);
+    const row = queryOne('SELECT * FROM citizens WHERE nin = ?', [normalizeNIN(req.params.nin)]);
     if (!row) {
       res.json({ obj: { error: 'National ID not found in registry' } });
       return;
@@ -94,12 +104,12 @@ router.post('/', (req, res, next) => {
     const errors: { field: string; message: string }[] = [];
     if (!body.FIRSTNAME) errors.push({ field: 'FIRSTNAME', message: 'Required' });
     if (!body.SURNAME) errors.push({ field: 'SURNAME', message: 'Required' });
-    if (body.NIN && String(body.NIN).length !== 20)
-      errors.push({ field: 'NIN', message: 'Must be 20 digits' });
+    if (body.NIN && !NIN_REGEX.test(normalizeNIN(String(body.NIN))))
+      errors.push({ field: 'NIN', message: 'Must be 20 alphanumeric chars in format YYYYMMDD-XXXXX-XXXXX-XX' });
     if (errors.length)
       throw new AppError(422, 'VALIDATION_ERROR', 'Validation failed', errors);
 
-    const nin = String(body.NIN || generateNIN());
+    const nin = body.NIN ? normalizeNIN(String(body.NIN)) : generateNIN();
     const db = getDb();
     const data = buildInsertData(body, nin);
     const stmt = db.prepare(`
@@ -127,11 +137,12 @@ router.post('/', (req, res, next) => {
 router.put('/:nin', (req, res, next) => {
   try {
     const db = getDb();
-    const existing = queryOne('SELECT nin FROM citizens WHERE nin = ?', [req.params.nin]);
+    const normalized = normalizeNIN(req.params.nin);
+    const existing = queryOne('SELECT nin FROM citizens WHERE nin = ?', [normalized]);
     const isNew = !existing;
 
-    db.run('DELETE FROM citizens WHERE nin = ?', [req.params.nin]);
-    const data = buildInsertData(req.body as Record<string, unknown>, req.params.nin);
+    db.run('DELETE FROM citizens WHERE nin = ?', [normalized]);
+    const data = buildInsertData(req.body as Record<string, unknown>, normalized);
     const stmt = db.prepare(`
       INSERT INTO citizens VALUES (
         @nin, @firstname, @middlename, @surname, @othernames, @sex, @dateofbirth,
@@ -147,7 +158,7 @@ router.put('/:nin', (req, res, next) => {
     stmt.step();
     stmt.free();
 
-    const row = queryOne('SELECT * FROM citizens WHERE nin = ?', [req.params.nin]);
+    const row = queryOne('SELECT * FROM citizens WHERE nin = ?', [normalized]);
     res.status(isNew ? 201 : 200).json({ obj: { result: row as unknown as Citizen } });
   } catch (err) {
     next(err);
@@ -157,7 +168,7 @@ router.put('/:nin', (req, res, next) => {
 router.delete('/:nin', (req, res, next) => {
   try {
     const db = getDb();
-    db.run('DELETE FROM citizens WHERE nin = ?', [req.params.nin]);
+    db.run('DELETE FROM citizens WHERE nin = ?', [normalizeNIN(req.params.nin)]);
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -215,8 +226,10 @@ function generateNIN(): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
-  const serial = String(Math.floor(Math.random() * 10000000000)).padStart(12, '0');
-  return `${y}${m}${d}${serial}`;
+  const locCode = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+  const serial = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+  const check = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+  return `${y}${m}${d}-${locCode}-${serial}-${check}`;
 }
 
 export default router;

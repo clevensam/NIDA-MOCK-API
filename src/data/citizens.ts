@@ -1,9 +1,11 @@
-import { PLACEHOLDER_PHOTO, PLACEHOLDER_SIGNATURE } from './placeholders';
+import { getRegions, getDistrictsByRegion, getWardsByDistrict, getStreets } from 'tz-locations';
+import type { Region, District, Ward, Street } from 'tz-locations';
+import { makePlaceholderPhoto, makePlaceholderSignature } from './placeholders';
 import type { Citizen } from '../types';
 
 const FIRST_NAMES_M = [
   'Juma', 'Baraka', 'Saidi', 'Hassan', 'Joseph', 'Emmanuel', 'John', 'Musa', 'Peter', 'Paul',
-  'Mohamed', 'Saidi', 'Ali', 'Suleiman', 'Hamisi', 'Yusuph', 'Idrissa', 'Omar', 'Bakari', 'Kassim',
+  'Mohamed', 'Ali', 'Suleiman', 'Hamisi', 'Yusuph', 'Idrissa', 'Omar', 'Bakari', 'Kassim',
   'Abdallah', 'Ramadhan', 'Salim', 'Michael', 'Samson', 'Longino', 'Mathias', 'David', 'George', 'William',
   'Ally', 'Aroni', 'Mussa', 'Rajabu', 'Jafari', 'Salum', 'Athumani', 'Salvatory', 'Patrick', 'Andrew',
 ];
@@ -12,7 +14,7 @@ const FIRST_NAMES_F = [
   'Aisha', 'Neema', 'Mwajuma', 'Zainabu', 'Asha', 'Halima', 'Fatuma', 'Mariam', 'Rehema', 'Saada',
   'Amina', 'Zena', 'Mwanaisha', 'Arafa', 'Shamim', 'Zuhura', 'Hawa', 'Khadija', 'Mwanamisi', 'Sofia',
   'Maimuna', 'Salma', 'Upendo', 'Subira', 'Pendo', 'Tatu', 'Mwanahawa', 'Ashura', 'Sikujua', 'Biubwa',
-  'Rukia', 'Zainabu', 'Mwanajuma', 'Amina', 'Jamila', 'Latifa', 'Mashaka', 'Maua', 'Mgeni', 'Nasra',
+  'Rukia', 'Mwanajuma', 'Jamila', 'Latifa', 'Mashaka', 'Maua', 'Mgeni', 'Nasra',
 ];
 
 const SURNAMES = [
@@ -20,63 +22,8 @@ const SURNAMES = [
   'Lema', 'Mkali', 'Mfaume', 'Khamis', 'Mollel', 'Kimaro', 'Mkonyi', 'Msangi', 'Mpanda', 'Mghanga',
   'Chilambo', 'Msumari', 'Rashid', 'Mngumi', 'Ngowi', 'Shayo', 'Mlay', 'Kessy', 'Mtui', 'Mdegela',
   'Mrosso', 'Mwakalinga', 'Mhina', 'Mbwana', 'Mndolwa', 'Mkude', 'Mponda', 'Mrope', 'Shirima', 'Mrema',
-  'Mushi', 'Mkony', 'Mrema', 'Mcharo', 'Mndeme', 'Mrosso', 'Msuya', 'Mkenda', 'Mngoya', 'Mutagwaba',
+  'Mcharo', 'Mndeme', 'Mkenda', 'Mngoya', 'Mutagwaba',
 ];
-
-const REGIONS = [
-  'Dar es Salaam', 'Arusha', 'Mwanza', 'Mbeya', 'Dodoma', 'Tanga', 'Morogoro',
-  'Kilimanjaro', 'Iringa', 'Pwani', 'Zanzibar Urban/West', 'Manyara', 'Geita',
-  'Singida', 'Katavi', 'Mtwara', 'Ruvuma', 'Kigoma', 'Lindi', 'Rukwa',
-];
-
-const DISTRICTS: Record<string, string[]> = {
-  'Dar es Salaam': ['Ilala', 'Kinondoni', 'Temeke', 'Ubungo', 'Kigamboni'],
-  'Arusha': ['Arusha City', 'Meru', 'Arusha DC'],
-  'Mwanza': ['Nyamagana', 'Ilemela', 'Mwanza City', 'Ukerewe'],
-  'Mbeya': ['Mbeya City', 'Mbeya DC', 'Mbarali'],
-  'Dodoma': ['Dodoma City', 'Dodoma DC', 'Kondoa', 'Kongwa'],
-  'Tanga': ['Tanga City', 'Muheza', 'Lushoto', 'Korogwe'],
-  'Morogoro': ['Morogoro Urban', 'Morogoro DC', 'Kilosa', 'Gairo'],
-  'Kilimanjaro': ['Moshi Municipal', 'Moshi DC', 'Hai', 'Rombo'],
-  'Iringa': ['Iringa Municipal', 'Iringa DC', 'Mufindi'],
-  'Pwani': ['Bagamoyo', 'Kibaha', 'Mkuranga'],
-  'Zanzibar Urban/West': ['Mjini', 'Magharibi'],
-  'Manyara': ['Babati', 'Mbulu', 'Hanang'],
-  'Geita': ['Geita Town', 'Chato', 'Bukombe'],
-  'Singida': ['Singida Municipal', 'Singida DC', 'Manyoni'],
-  'Katavi': ['Mpanda', 'Mlele'],
-  'Mtwara': ['Mtwara Municipal', 'Mtwara DC', 'Newala'],
-  'Ruvuma': ['Songea Municipal', 'Songea DC', 'Tunduru'],
-  'Kigoma': ['Kigoma Ujiji', 'Kasulu', 'Kibondo'],
-  'Lindi': ['Lindi Municipal', 'Lindi DC', 'Kilwa'],
-  'Rukwa': ['Sumbawanga', 'Nkasi', 'Kalambo'],
-};
-
-const WARDS: Record<string, string[]> = {
-  'Ilala': ['Kariakoo', 'Mchikichini', 'Upanga', 'Buguruni', 'Vingunguti'],
-  'Kinondoni': ['Msasani', 'Mwananyamala', 'Kawe', 'Kunduchi', 'Mikocheni'],
-  'Temeke': ['Mtoni', 'Changombe', 'Kurasini', 'Keko', 'Azimio'],
-  'Ubungo': ['Ubungo', 'Manzese', 'Sinza', 'Makuburi', 'Kimara'],
-  'Arusha City': ['Sekei', 'Sokon', 'Ngarenaro', 'Oloirien', 'Lemara'],
-  'Meru': ['Nkoaranga', 'Usa River', 'Songoro', 'Kikatiti', 'Maroroni'],
-  'Nyamagana': ['Mwanza City', 'Nyamagana', 'Mkolani', 'Mbugani', 'Lutambi'],
-  'Mbeya City': ['Ilemi', 'Iyela', 'Ruanda', 'Mabatini', 'Sisimba'],
-  'Dodoma City': ['Kikuyu', 'Makole', 'Miyuji', 'Nzuguni', 'Mtumba'],
-  'Mjini': ['Stone Town', 'Kiponda', 'Shangani', 'Mkunazini', 'Kokoni'],
-};
-
-const VILLAGES: Record<string, string[]> = {
-  'Kariakoo': ['Kariakoo A', 'Kariakoo B', 'Kariakoo C'],
-  'Msasani': ['Msasani A', 'Msasani B', 'Sea View'],
-  'Mtoni': ['Mtoni Kijichi', 'Mtoni Mchangani', 'Mtoni Mbuyuni'],
-  'Sekei': ['Sekei Kati', 'Sekei Magharibi', 'Sekei Mashariki'],
-  'Mwanza City': ['City Center', 'Mwaloni', 'Butimba'],
-  'Ilemi': ['Ilemi Kati', 'Ilemi Juu', 'Ilemi Chini'],
-  'Kikuyu': ['Kikuyu A', 'Kikuyu B', 'Mtakuja'],
-  'Ubungo': ['Ubungo Kisiwani', 'Ubungo Maziwa', 'Ubungo Darajani'],
-  'Stone Town': ['Mkunazini', 'Kiponda', 'Shangani'],
-  'Makole': ['Makole A', 'Makole B', 'Mpanda'],
-};
 
 const OCCUPATIONS = [
   'Teacher', 'Nurse', 'Doctor', 'Software Engineer', 'Accountant', 'Driver',
@@ -97,13 +44,17 @@ const SCHOOLS = [
   'Upanga Primary', 'Changombe Primary', 'Kawe Primary', 'Sinza Primary', 'Lemara Primary',
 ];
 
-const STREETS = [
-  'Mkwepu', 'Nyerere Road', 'Station Road', 'Kibo Road', 'Mbalizi Road',
-  'Sokoine Drive', 'Chumba', 'Haile Selassie', 'Gangilonga', 'Ocean Road',
-  'Arusha-Moshi', 'Kenyatta Road', 'Market Street', 'Mtoni Road', 'Boma Road',
-  'Nyanza Road', 'Old Moshi', 'Mpanda Road', 'Nangwanda', 'Majimaji',
-  'Kibwabwa', 'Morogoro Road', 'Soni', 'Makole Road', 'Kariakoo Street',
-  'Ali Hassan Mwinyi', 'Bagamoyo Road', 'Mkunguni', 'Nyamwezi', 'Samora Avenue',
+const MIDDLENAMES = [
+  'Hassan', 'Salim', 'Joseph', 'Peter', 'Juma', 'Mohamed', 'John', 'Ali', 'Hamisi', 'Bakari',
+  'Omar', 'Iddi', 'Said', 'Samson', 'Michael', 'Mathias', 'Abdallah', 'Ramadhan', 'Yusuph', 'Kassim',
+];
+
+const PHONE_PREFIXES = [
+  { prefix: '076', weight: 20 }, { prefix: '075', weight: 15 },
+  { prefix: '068', weight: 15 }, { prefix: '069', weight: 15 },
+  { prefix: '071', weight: 10 }, { prefix: '065', weight: 10 },
+  { prefix: '062', weight: 5 },  { prefix: '061', weight: 5 },
+  { prefix: '077', weight: 3 },  { prefix: '067', weight: 2 },
 ];
 
 let seed = 42;
@@ -116,16 +67,18 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(pseudoRandom() * arr.length)];
 }
 
-function pickSex(): 'MALE' | 'FEMALE' {
-  return pseudoRandom() > 0.5 ? 'MALE' : 'FEMALE';
+function weightedPickPrefix(): string {
+  const total = PHONE_PREFIXES.reduce((s, p) => s + p.weight, 0);
+  let r = pseudoRandom() * total;
+  for (const p of PHONE_PREFIXES) {
+    r -= p.weight;
+    if (r <= 0) return p.prefix;
+  }
+  return PHONE_PREFIXES[PHONE_PREFIXES.length - 1].prefix;
 }
 
-function generateNIN(index: number): string {
-  const dd = String(1 + Math.floor(pseudoRandom() * 28)).padStart(2, '0');
-  const mm = String(1 + Math.floor(pseudoRandom() * 12)).padStart(2, '0');
-  const yyyy = String(1965 + Math.floor(pseudoRandom() * 40));
-  const serial = String(index + 1).padStart(12, '0');
-  return `${yyyy}${mm}${dd}${serial}`;
+function pickSex(): 'MALE' | 'FEMALE' {
+  return pseudoRandom() > 0.5 ? 'MALE' : 'FEMALE';
 }
 
 function generateDOB(): string {
@@ -135,9 +88,16 @@ function generateDOB(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function ninFromDOB(dob: string, index: number): string {
+  const datePart = dob.replace(/-/g, '');
+  const locCode = String(10000 + Math.floor(index / 1000)).slice(-5);
+  const serial = String(index + 1).padStart(5, '0');
+  const check = String(((index + 1) * 7 + 31) % 100).padStart(2, '0');
+  return `${datePart}-${locCode}-${serial}-${check}`;
+}
+
 function generatePhone(): string {
-  const prefixes = ['071', '072', '073', '074', '075', '076', '077', '078', '061', '062', '065', '067'];
-  const prefix = pick(prefixes);
+  const prefix = weightedPickPrefix();
   const suffix = String(1000000 + Math.floor(pseudoRandom() * 9000000));
   return `${prefix}${suffix}`;
 }
@@ -146,54 +106,115 @@ function generateYear(): string {
   return String(1980 + Math.floor(pseudoRandom() * 30));
 }
 
-export const CITIZENS: Citizen[] = Array.from({ length: 100 }, (_, i) => {
-  const sex = pickSex();
-  const firstname = sex === 'MALE' ? pick(FIRST_NAMES_M) : pick(FIRST_NAMES_F);
-  const surname = pick(SURNAMES);
-  const region = pick(REGIONS);
-  const district = pick(DISTRICTS[region] || DISTRICTS['Dar es Salaam']);
-  const ward = pick(WARDS[district] || WARDS['Ilala']);
-  const village = pick(VILLAGES[ward] || VILLAGES['Kariakoo']);
-  const street = pick(STREETS);
-  const school = pick(SCHOOLS);
-  const occupation = pick(OCCUPATIONS);
-  const marital = pick(MARITAL_STATUSES);
-  const nin = generateNIN(i);
-  const dob = generateDOB();
+interface GeoResult {
+  region: string;
+  regionSlug: string;
+  district: string;
+  ward: string;
+  village: string;
+  street: string;
+  postcode: string;
+}
+
+function pickGeoLocation(regions: Region[], excludeRegionSlug?: string): GeoResult {
+  const region = excludeRegionSlug
+    ? pick(regions.filter(r => r.slug !== excludeRegionSlug))
+    : pick(regions);
+
+  const districts = getDistrictsByRegion(region.slug);
+  const district = pick(districts);
+
+  const wards = getWardsByDistrict(region.slug, district.slug);
+  const ward = pick(wards);
+
+  const streets = getStreets(region.slug, district.slug, ward.slug);
+
+  let streetName1: string;
+  let streetName2: string;
+  let postcode: string;
+
+  if (streets.length === 0) {
+    streetName1 = ward.name;
+    streetName2 = ward.name;
+    postcode = String(10000 + Math.floor(pseudoRandom() * 90000));
+  } else if (streets.length === 1) {
+    streetName1 = streets[0].name;
+    streetName2 = streets[0].name;
+    postcode = streets[0].postcode;
+  } else {
+    const s1 = pick(streets);
+    const s2 = pick(streets);
+    streetName1 = s1.name;
+    streetName2 = s2.name;
+    postcode = s1.postcode;
+  }
 
   return {
-    NIN: nin,
-    FIRSTNAME: firstname,
-    MIDDLENAME: pick(['Hassan', 'Salim', 'Joseph', 'Peter', 'Juma', 'Mohamed', 'John', 'Ali', 'Hamisi', 'Bakari', 'Omar', 'Iddi', 'Said', 'Samson', 'Michael', 'Mathias', 'Abdallah', 'Ramadhan', 'Yusuph', 'Kassim']),
-    SURNAME: surname,
-    OTHERNAMES: pseudoRandom() > 0.7 ? pick(['Jr.', 'Sr.', 'III']) : '',
-    SEX: sex,
-    DATEOFBIRTH: dob,
-    RESIDENTREGION: region,
-    RESIDENTDISTRICT: district,
-    RESIDENTWARD: ward,
-    RESIDENTVILLAGE: village,
-    RESIDENTSTREET: street,
-    RESIDENTPOSTCODE: String(10000 + Math.floor(pseudoRandom() * 60000)),
-    PERMANENTREGION: pseudoRandom() > 0.4 ? pick(REGIONS.filter(r => r !== region)) : region,
-    PERMANENTDISTRICT: district,
-    PERMANENTWARD: pick(Object.values(WARDS).flat()),
-    PERMANENTVILLAGE: ward,
-    PERMANENTSTREET: pick(STREETS),
-    BIRTHCOUNTRY: 'TANZANIA',
-    BIRTHREGION: region,
-    BIRTHDISTRICT: district,
-    BIRTHWARD: ward,
-    NATIONALITY: 'TANZANIAN',
-    PHONENUMBER: generatePhone(),
-    MARITALSTATUS: marital,
-    OCCUPATION: occupation,
-    PRIMARYSCHOOLEDUCATION: school,
-    PRIMARYSCHOOLDISTRICT: district,
-    PRIMARYSCHOOLYEAR: generateYear(),
-    PHOTO: PLACEHOLDER_PHOTO,
-    SIGNATURE: PLACEHOLDER_SIGNATURE,
-    NATIONALIDNUMBER: nin,
-    LASTNAME: surname,
+    region: region.name,
+    regionSlug: region.slug,
+    district: district.name,
+    ward: ward.name,
+    village: streetName2,
+    street: streetName1,
+    postcode,
   };
-});
+}
+
+export const CITIZENS: Citizen[] = (() => {
+  const allRegions = getRegions();
+  const placeholderPhoto = makePlaceholderPhoto();
+  const placeholderSignature = makePlaceholderSignature();
+
+  return Array.from({ length: 200 }, (_, i) => {
+    const sex = pickSex();
+    const firstname = sex === 'MALE' ? pick(FIRST_NAMES_M) : pick(FIRST_NAMES_F);
+    const surname = pick(SURNAMES);
+    const dob = generateDOB();
+    const nin = ninFromDOB(dob, i);
+    const occupation = pick(OCCUPATIONS);
+    const marital = pick(MARITAL_STATUSES);
+    const school = pick(SCHOOLS);
+
+    const residentGeo = pickGeoLocation(allRegions);
+    const birthGeo = pickGeoLocation(allRegions);
+    const permGeo = pseudoRandom() > 0.4
+      ? pickGeoLocation(allRegions, residentGeo.regionSlug)
+      : residentGeo;
+
+    return {
+      NIN: nin,
+      FIRSTNAME: firstname,
+      MIDDLENAME: pick(MIDDLENAMES),
+      SURNAME: surname,
+      OTHERNAMES: pseudoRandom() > 0.7 ? pick(['Jr.', 'Sr.', 'III']) : '',
+      SEX: sex,
+      DATEOFBIRTH: dob,
+      RESIDENTREGION: residentGeo.region,
+      RESIDENTDISTRICT: residentGeo.district,
+      RESIDENTWARD: residentGeo.ward,
+      RESIDENTVILLAGE: residentGeo.village,
+      RESIDENTSTREET: residentGeo.street,
+      RESIDENTPOSTCODE: residentGeo.postcode,
+      PERMANENTREGION: permGeo.region,
+      PERMANENTDISTRICT: permGeo.district,
+      PERMANENTWARD: permGeo.ward,
+      PERMANENTVILLAGE: permGeo.village,
+      PERMANENTSTREET: permGeo.street,
+      BIRTHCOUNTRY: 'TANZANIA',
+      BIRTHREGION: birthGeo.region,
+      BIRTHDISTRICT: birthGeo.district,
+      BIRTHWARD: birthGeo.ward,
+      NATIONALITY: 'TANZANIAN',
+      PHONENUMBER: generatePhone(),
+      MARITALSTATUS: marital,
+      OCCUPATION: occupation,
+      PRIMARYSCHOOLEDUCATION: school,
+      PRIMARYSCHOOLDISTRICT: birthGeo.district,
+      PRIMARYSCHOOLYEAR: generateYear(),
+      PHOTO: placeholderPhoto,
+      SIGNATURE: placeholderSignature,
+      NATIONALIDNUMBER: nin,
+      LASTNAME: surname,
+    };
+  });
+})();
