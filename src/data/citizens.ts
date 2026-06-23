@@ -1,5 +1,5 @@
-import { getRegions, getDistrictsByRegion, getWardsByDistrict, getStreets } from 'tz-locations';
-import type { Region, District, Ward, Street } from 'tz-locations';
+import { getRegions, getDistrictsByRegion, getWardsByDistrict, getStreets } from './locations';
+import type { Region } from './locations';
 import { makePlaceholderPhoto, makePlaceholderSignature } from './placeholders';
 import type { Citizen } from '../types';
 
